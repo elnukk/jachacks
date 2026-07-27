@@ -13,7 +13,7 @@ impl app.handle_decompose -> None {
     chat_messages = [];
     selected_function_ids = [];
 
-    p = await decompose_product(product_text, use_environment);
+    p = await decompose_product(product_text, "");
     product = p;
 
     if p.status == "failed" {
@@ -86,11 +86,6 @@ impl app.handle_ask -> None {
     }
 
     chat_loading = False;
-}
-
-impl app.handle_prefill(example: dict) -> None {
-    product_text = example["text"] as str;
-    use_environment = example["use_environment"] as str;
 }
 
 impl app.handle_show_baseline -> None {

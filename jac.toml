@@ -40,4 +40,4 @@ title = "Crosswalk"
 description = "Finding the research your R&D team didn't know to look for"
 
 [byllm.model]
-default_model = "local:gemma-4-e4b"
+default_model = "anthropic/claude-haiku-4-5-20251001"

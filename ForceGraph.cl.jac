@@ -5,11 +5,17 @@ without this the canvas sizes itself independently of the parent box and
 visually spills outside it. Scroll/pinch zoom is disabled in favor of
 explicit +/- /reset buttons (zoom via the fgRef imperative API).
 
+Nodes are plain circles (native ForceGraph2D rendering, no custom canvas
+draw) - always-visible on-canvas labels (as text below the dot, or as
+auto-sized card text) were tried and made the graph crowded/illegible with
+more than a handful of nodes. Labels only appear on hover (nodeLabel), which
+keeps the canvas itself readable regardless of graph size.
+
 Function nodes are click-to-select (highlighted) for "Send Deep"; ResearchWork
 nodes are click-to-inspect (bubbles up to show the research panel).
 """
 
-import from react { useEffect }
+import from react { useEffect, useMemo }
 import from "react-force-graph-2d" { default as ForceGraph2D }
 sv import from .views { GraphNode, GraphEdge }
 
@@ -48,17 +54,39 @@ def:pub ForceGraph(
         return lambda { window.removeEventListener("resize", measure); };
     }, []);
 
-    graph_nodes = [
-        {
-            "id": n.id,
-            "name": ("[selected] " + n.label) if n.id in selectedIds else n.label,
-            "val": (n.val * 1.6) if n.id in selectedIds else n.val,
-            "kind": n.kind,
-            "color": node_color(n.kind, n.id in selectedIds)
+    useEffect(lambda {
+        if fgRef.current {
+            fgRef.current.d3Force("charge").strength(-140).distanceMax(500);
+            fgRef.current.d3Force("link").distance(65);
         }
-        for n in nodes
-    ];
-    graph_links = [{"source": e.source, "target": e.target} for e in edges];
+    }, []);
+
+    # Memoized so unrelated re-renders (e.g. typing in the chat box, which
+    # re-renders the whole page) don't hand ForceGraph2D a brand-new
+    # graphData object every keystroke - a new object reference makes it
+    # reheat the force simulation, visibly jostling every node even though
+    # nothing about the graph actually changed.
+    graph_data = useMemo(lambda {
+        return {
+            "nodes": [
+                {
+                    "id": n.id,
+                    "name": n.label,
+                    "val": (n.val * 1.6) if n.id in selectedIds else n.val,
+                    "kind": n.kind,
+                    "color": node_color(n.kind, n.id in selectedIds)
+                }
+                for n in nodes
+            ],
+            "links": [{"source": e.source, "target": e.target} for e in edges]
+        };
+    }, [nodes, edges, selectedIds]);
+
+    def format_tooltip(gnode: any) -> str {
+        color = gnode["color"] as str;
+        name = gnode["name"] as str;
+        return f"<div style='display:flex;align-items:center;gap:0.45rem;'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:{color};flex-shrink:0;'></span><span>{name}</span></div>";
+    }
 
     def handle_click(clicked: any) {
         if onNodeClick {
@@ -84,10 +112,17 @@ def:pub ForceGraph(
         }
     }
 
+    def handle_engine_stop() {
+        if fgRef.current {
+            fgRef.current.zoomToFit(400, 60);
+        }
+    }
+
     zoom_btn_style: dict = {
-        "width": "2rem", "height": "2rem", "border": "1px solid #d1d5db", "borderRadius": "6px",
-        "backgroundColor": "white", "cursor": "pointer", "fontSize": "1rem", "fontWeight": "bold",
-        "boxShadow": "0 1px 3px rgba(0,0,0,0.15)"
+        "width": "2rem", "height": "2rem", "border": "1px solid rgba(255,255,255,0.9)", "borderRadius": "10px",
+        "backgroundColor": "rgba(255,255,255,0.8)", "backdropFilter": "blur(12px)", "cursor": "pointer",
+        "fontFamily": "'Figtree', sans-serif", "fontSize": "1rem", "fontWeight": "600", "color": "#111827",
+        "boxShadow": "0 2px 8px rgba(0,0,0,0.08)"
     };
 
     return <div ref={containerRef} style={{"width": "100%", "height": "100%", "position": "relative", "overflow": "hidden"}}>
@@ -95,12 +130,18 @@ def:pub ForceGraph(
             ref={fgRef}
             width={dims["width"]}
             height={dims["height"]}
-            graphData={{"nodes": graph_nodes, "links": graph_links}}
-            nodeLabel="name"
+            graphData={graph_data}
+            backgroundColor="rgba(0,0,0,0)"
+            nodeColor="color"
+            nodeVal="val"
+            nodeRelSize={5}
+            nodeLabel={format_tooltip}
+            linkColor={lambda { return "rgba(99,102,241,0.25)"; }}
             onNodeClick={handle_click}
+            onEngineStop={handle_engine_stop}
             enableZoomInteraction={False}
         />
-        <div style={{"position": "absolute", "top": "0.5rem", "right": "0.5rem", "display": "flex", "flexDirection": "column", "gap": "0.3rem"}}>
+        <div style={{"position": "absolute", "top": "0.5rem", "right": "0.5rem", "display": "flex", "flexDirection": "column", "gap": "0.35rem"}}>
             <button onClick={handle_zoom_in} style={zoom_btn_style} title="Zoom in">+</button>
             <button onClick={handle_zoom_out} style={zoom_btn_style} title="Zoom out">-</button>
             <button onClick={handle_zoom_reset} style={zoom_btn_style} title="Fit to view">{"⟲"}</button>
@@ -108,8 +149,9 @@ def:pub ForceGraph(
         <div style={{
             "position": "absolute", "bottom": "0.5rem", "left": "0.5rem",
             "display": "flex", "gap": "0.75rem", "flexWrap": "wrap", "maxWidth": "90%",
-            "backgroundColor": "rgba(255,255,255,0.9)", "padding": "0.35rem 0.6rem",
-            "borderRadius": "6px", "fontSize": "0.72rem", "border": "1px solid #e5e7eb"
+            "backgroundColor": "rgba(255,255,255,0.8)", "backdropFilter": "blur(12px)", "padding": "0.4rem 0.65rem",
+            "borderRadius": "10px", "fontSize": "0.72rem", "fontFamily": "'Figtree', sans-serif", "fontWeight": "500",
+            "color": "#111827", "border": "1px solid rgba(255,255,255,0.9)", "boxShadow": "0 2px 8px rgba(0,0,0,0.06)"
         }}>
             <span><span style={{"color": "#2563eb"}}>&#9679;</span> Product</span>
             <span><span style={{"color": "#7c3aed"}}>&#9679;</span> Component</span>

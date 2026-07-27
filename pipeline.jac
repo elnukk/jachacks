@@ -55,10 +55,12 @@ def has_verified_result(function_id: str) -> bool {
 def process_one_function(function_id: str) -> str {
     try {
         fn = jobj(function_id);
-    } except Exception {
+    } except Exception as e {
+        print(f"[pipeline] {function_id} jobj() raised: {str(e)}");
         return function_id;
     }
     if not isinstance(fn, Function) {
+        print(f"[pipeline] {function_id} jobj() returned non-Function: {type(fn)}");
         return function_id;
     }
 
