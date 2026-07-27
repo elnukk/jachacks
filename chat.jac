@@ -6,13 +6,11 @@ single module-level glob at declaration time - not suited to per-path,
 per-user history.
 """
 
-import from jaclang.byllm.lib { Model }
 import from schema { ResearchWork }
 import from views { build_hop_path }
+import from models { shared_llm }
 
-glob chat_llm: any = Model(model_name="claude-haiku-4-5-20251001");
-
-def answer_question(prompt_text: str) -> str by chat_llm();
+def answer_question(prompt_text: str) -> str by shared_llm();
 sem answer_question = "Answer the user's question about this specific cross-domain research connection. Be concise, specific, and grounded only in the given context - if the context doesn't support an answer, say so rather than speculating.";
 sem answer_question.prompt_text = "The traversal path, the research paper's details, prior conversation turns, and the user's latest question, all as plain text.";
 

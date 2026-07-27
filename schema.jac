@@ -30,7 +30,7 @@ node Function {
     has name: str = "",
         abstraction_level: int = 0,           # 0 = concrete feature, higher = more general
         domain_neutral_desc: str = "";
-    has deep_status: str = "idle";            # "idle" | "exploring" | "done" | "failed"
+    has deep_status: str = "idle";            # "idle" | "exploring" | "done" | "no_results" | "failed"
 }
 
 node ResearchWork {

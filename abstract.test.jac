@@ -1,27 +1,42 @@
-"""Tests for abstract_function - hop cap + abstracts_to chain, no real API key needed."""
+"""Tests for abstract_one_level - single merged abstract+query-generation
+hop, no real API key/model needed."""
 
 import from jaclang.byllm.lib { MockLLM }
 
-test "abstraction climbs to the hop cap and stops" {
-    fast_llm = MockLLM(model_name="mockllm", config={"outputs": [
-        AbstractResult(name="level-1", domain_neutral_desc="desc-1"),
-        AbstractResult(name="level-2", domain_neutral_desc="desc-2"),
-        AbstractResult(name="level-3", domain_neutral_desc="desc-3"),
+test "abstract_one_level produces a new function and search queries" {
+    shared_llm = MockLLM(model_name="mockllm", config={"outputs": [
+        AbstractAndQueries(
+            name="level-1", domain_neutral_desc="desc-1",
+            search_queries=["materials science phrasing", "biology phrasing"]
+        ),
     ]});
 
     base = root ++> Function(name="won't crack in cold", abstraction_level=0);
-    created = abstract_function(jid(base));
+    step = abstract_one_level(jid(base));
 
-    assert len(created) == 3;
-    assert created[0].name == "level-1";
-    assert created[2].abstraction_level == 3;
+    assert step is not None;
+    assert step.next_function.name == "level-1";
+    assert step.next_function.abstraction_level == 1;
+    assert step.search_queries == ["materials science phrasing", "biology phrasing"];
 
     chain = [base ->:abstracts_to:->][?:Function];
     assert len(chain) == 1;
     assert chain[0].name == "level-1";
 }
 
-test "abstract_function on an unknown id returns empty" {
-    fast_llm = MockLLM(model_name="mockllm", config={"outputs": []});
-    assert abstract_function("not-a-real-id") == [];
+test "abstract_one_level falls back to the domain_neutral_desc when no queries returned" {
+    shared_llm = MockLLM(model_name="mockllm", config={"outputs": [
+        AbstractAndQueries(name="level-1", domain_neutral_desc="desc-1", search_queries=[]),
+    ]});
+
+    base = root ++> Function(name="fn", abstraction_level=0);
+    step = abstract_one_level(jid(base));
+
+    assert step is not None;
+    assert step.search_queries == ["desc-1"];
+}
+
+test "abstract_one_level on an unknown id returns None" {
+    shared_llm = MockLLM(model_name="mockllm", config={"outputs": []});
+    assert abstract_one_level("not-a-real-id") is None;
 }

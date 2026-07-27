@@ -26,7 +26,7 @@ glob fixture_results: list[dict] = [
     },
 ];
 
-test "create_candidates scores field distance and links candidates" {
+test "create_candidates scores field distance and skips same-field candidates" {
     product = root ++> Product(name="p", home_domain_id="D1", home_field_id="F1", home_subfield_id="S1");
     component = Component(name="c");
     product +>:has_component:+> component;
@@ -35,17 +35,66 @@ test "create_candidates scores field distance and links candidates" {
 
     created = create_candidates(fn, fixture_results);
 
-    assert len(created) == 2;
-    assert created[0].title == "same-subfield paper";
-    assert created[1].title == "far-field paper";
+    # the same-subfield candidate is skipped entirely (never worth a Judge
+    # call - rank_score would always be 0), only the far-field one remains
+    assert len(created) == 1;
+    assert created[0].title == "far-field paper";
 
     edges = [edge fn <-:serves_function:<-];
-    assert len(edges) == 2;
-    distances = [e.field_distance for e in edges];
-    assert distances[0] == 0;   # same subfield as home -> 0
-    assert distances[1] == 3;   # different domain entirely -> 3
+    assert len(edges) == 1;
+    assert edges[0].field_distance == 3;
 }
 
 test "discover_candidates on an unknown function id returns empty" {
-    assert discover_candidates("not-a-real-id") == [];
+    assert discover_candidates("not-a-real-id", ["some query"]) == [];
+}
+
+test "discover_candidates with no queries returns empty" {
+    fn = root ++> Function(name="fn");
+    assert discover_candidates(jid(fn), []) == [];
+}
+
+test "similarity.rank_by_similarity ranks closer text higher" {
+    candidates: list[dict] = [
+        {"title": "Riblet surfaces inspired by shark denticles reduce drag", "abstract": "turbulent boundary layer"},
+        {"title": "A history of 19th century pottery glazing techniques", "abstract": "ceramic art history"},
+    ];
+    ranked = similarity.rank_by_similarity(candidates, "drag reduction via riblet surface texture", 2) as list[dict];
+    assert (ranked[0]["title"] as str) == "Riblet surfaces inspired by shark denticles reduce drag";
+}
+
+test "dedupe_pool drops duplicate oa_ids across variant result lists" {
+    list_a: list[dict] = [
+        {"oa_id": "W1", "title": "paper one"},
+        {"oa_id": "W2", "title": "paper two"},
+    ];
+    list_b: list[dict] = [
+        {"oa_id": "W2", "title": "paper two"},   # duplicate of list_a's W2
+        {"oa_id": "W3", "title": "paper three"},
+    ];
+
+    pooled = dedupe_pool([list_a, list_b], 10);
+
+    assert len(pooled) == 3;
+    ids = [p["oa_id"] as str for p in pooled];
+    assert ids == ["W1", "W2", "W3"];
+}
+
+test "dedupe_pool caps the pooled total" {
+    list_a: list[dict] = [
+        {"oa_id": "W1", "title": "a"}, {"oa_id": "W2", "title": "b"}, {"oa_id": "W3", "title": "c"},
+    ];
+
+    pooled = dedupe_pool([list_a], 2);
+
+    assert len(pooled) == 2;
+}
+
+test "dedupe_pool falls back to title when oa_id is empty" {
+    list_a: list[dict] = [{"oa_id": "", "title": "untitled work"}];
+    list_b: list[dict] = [{"oa_id": "", "title": "untitled work"}];
+
+    pooled = dedupe_pool([list_a, list_b], 10);
+
+    assert len(pooled) == 1;
 }

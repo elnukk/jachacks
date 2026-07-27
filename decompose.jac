@@ -6,10 +6,8 @@ home-field lookup live, for arbitrary pasted product text. No fixtures.
 """
 
 import openalex_client;
-import from jaclang.byllm.lib { Model }
 import from schema { Product, Component, Function, has_component, requires_function }
-
-glob fast_llm: Model = Model(model_name="claude-haiku-4-5-20251001");
+import from models { shared_llm }
 
 obj FunctionSpec {
     has name: str;
@@ -30,7 +28,7 @@ obj Decomposition {
 }
 sem Decomposition.components = "Every physical or logical component of the product, derived from its stated specs plus world knowledge of how this class of product is typically built.";
 
-def decompose(product_text: str, use_environment: str) -> Decomposition by fast_llm();
+def decompose(product_text: str, use_environment: str) -> Decomposition by shared_llm();
 sem decompose = "Decompose a product description into its physical/logical components and every function each component must perform, including functions implied by its use environment.";
 sem decompose.product_text = "The product's name, description, and/or pasted spec text.";
 sem decompose.use_environment = "Where/how the product is used - may be empty. Use it to infer additional environmental functions (UV, cold, vibration, moisture, impact, etc).";

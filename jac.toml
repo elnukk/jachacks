@@ -8,6 +8,7 @@ jac-version = "==0.34.6"
 
 [dependencies]
 requests = "~=2.34"
+"byllm[local]" = ">=0.0.0"
 [dependencies.npm]
 react = "^18.2.0"
 react-dom = "^18.2.0"
@@ -39,5 +40,4 @@ title = "Crosswalk"
 description = "Finding the research your R&D team didn't know to look for"
 
 [byllm.model]
-default_model = "claude-haiku-4-5-20251001"
-api_key = "${ANTHROPIC_API_KEY}"
+default_model = "local:gemma-4-e4b"
