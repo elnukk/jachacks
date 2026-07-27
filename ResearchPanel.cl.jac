@@ -122,6 +122,7 @@ def:pub ResearchPanel(
                     }}
                 />
                 <button
+                    className="cw-btn"
                     type="submit"
                     disabled={chatLoading or len(chatInput.strip()) == 0}
                     style={{

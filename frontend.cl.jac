@@ -72,6 +72,30 @@ def:pub app -> JsxElement {
                 max-width: 280px !important;
                 line-height: 1.4 !important;
             }
+            .cw-glass {
+                position: relative;
+                overflow: hidden;
+                transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+            }
+            .cw-glass::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 60%);
+                pointer-events: none;
+                border-radius: inherit;
+            }
+            .cw-btn {
+                transition: transform 150ms ease-out, box-shadow 150ms ease-out, filter 150ms ease-out;
+            }
+            .cw-btn:hover:not(:disabled) {
+                transform: translateY(-3px);
+                filter: brightness(1.06);
+            }
+            .cw-btn:active:not(:disabled) {
+                transform: scale(0.97);
+                transition: transform 0ms;
+            }
         """}</style>
 
         <div style={{"maxWidth": "1700px", "margin": "0 auto", "padding": "2rem 1rem", "fontFamily": FONT_FAMILY}}>
@@ -82,6 +106,7 @@ def:pub app -> JsxElement {
             </p>
 
             <textarea
+                className="cw-glass"
                 value={product_text}
                 onChange={lambda (e: ChangeEvent) { product_text = e.target.value; }}
                 placeholder="e.g. A camping stove with a folding wind screen, used in high-altitude backcountry conditions..."
@@ -95,6 +120,7 @@ def:pub app -> JsxElement {
                 }}
             />
             <button
+                className="cw-btn"
                 onClick={handle_decompose}
                 disabled={loading or len(product_text.strip()) == 0}
                 style={{
@@ -115,13 +141,14 @@ def:pub app -> JsxElement {
 
             {if graph is not None {
                 <div key="graph-section">
-                    <div style={{
+                    <div className="cw-glass" style={{
                         "marginTop": "1.5rem", "padding": "1.1rem 1.25rem",
                         "background": "rgba(255,255,255,0.72)", "border": "1px solid rgba(255,255,255,0.9)",
                         "backdropFilter": "blur(20px)", "borderRadius": "14px", "boxShadow": GLASS_SHADOW
                     }}>
                         <div style={{"display": "flex", "alignItems": "center", "gap": "0.75rem", "flexWrap": "wrap"}}>
                             <button
+                                className="cw-btn"
                                 onClick={handle_send_deep}
                                 disabled={exploring or len(selected_function_ids) == 0}
                                 style={{
@@ -140,6 +167,7 @@ def:pub app -> JsxElement {
                                 {"Exploring..." if exploring else f"Send Deep ({len(selected_function_ids)} selected)"}
                             </button>
                             <button
+                                className="cw-btn"
                                 onClick={handle_show_baseline}
                                 disabled={baseline_loading or len(selected_function_ids) == 0}
                                 style={{
@@ -191,7 +219,7 @@ def:pub app -> JsxElement {
                         }}>
                             <ForceGraph nodes={graph.nodes} edges={graph.edges} selectedIds={selected_function_ids} onNodeClick={handle_node_click} />
                         </div>
-                        <div style={{
+                        <div className="cw-glass" style={{
                             "width": "560px", "flexShrink": "0", "height": "800px", "overflow": "hidden",
                             "background": "rgba(255,255,255,0.72)", "border": "1px solid rgba(255,255,255,0.9)",
                             "backdropFilter": "blur(20px)", "borderRadius": "14px", "boxShadow": GLASS_SHADOW
