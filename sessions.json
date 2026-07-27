@@ -1,7 +1,8 @@
 {
   "agent-elanuk-41832": {
     "files": [
-      "models.jac"
+      "models.jac",
+      "jac.toml"
     ],
     "owner": "elanuk",
     "started": 1785111704,
