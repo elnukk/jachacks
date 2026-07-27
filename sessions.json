@@ -1,6 +1,8 @@
 {
   "agent-elanuk-41832": {
-    "files": [],
+    "files": [
+      "models.jac"
+    ],
     "owner": "elanuk",
     "started": 1785111704,
     "expires": 1785112604,
